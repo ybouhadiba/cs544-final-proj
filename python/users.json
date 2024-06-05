@@ -1,0 +1,24 @@
+{
+    "users": [
+        {
+            "name": "BigMode",
+            "id": "1",
+            "password": "yes"
+        },
+        {
+            "name": "extralettuce",
+            "id": "2",
+            "password": "password"
+        },
+        {
+            "username": "someoneElse",
+            "id": "3",
+            "password": "a"
+        },
+        {
+            "username": "onemore",
+            "id": "4",
+            "password": "salmon"
+        }
+    ]
+}
