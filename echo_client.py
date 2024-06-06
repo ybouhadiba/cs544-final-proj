@@ -5,6 +5,13 @@ from echo_quic import EchoQuicConnection, QuicStreamEvent
 import pdu
 from datetime import datetime
 
+
+#Handle user input without blocking the event loop, preventing input() from blocking receipt
+async def input_handler(input_queue: asyncio.Queue):
+    while True:
+        message = await asyncio.to_thread(input, "> ")
+        await input_queue.put(message)
+
 #Handle received messages without blocking the event loop
 async def receive_messages(conn: EchoQuicConnection, stream_id: int):
     print("[cli] starting receive_messages")
@@ -19,12 +26,6 @@ async def receive_messages(conn: EchoQuicConnection, stream_id: int):
         except Exception as e:
             print(f"Error receiving message: {e}")
             break
-
-#Handle user input without blocking the event loop, preventing input() from blocking receipt
-async def input_handler(input_queue: asyncio.Queue):
-    while True:
-        message = await asyncio.to_thread(input, "> ")
-        await input_queue.put(message)
 
 #Main client function
 async def echo_client_proto(scope: Dict, conn: EchoQuicConnection):
@@ -44,7 +45,7 @@ async def echo_client_proto(scope: Dict, conn: EchoQuicConnection):
             print("Type /exit to log out.")
             input_queue = asyncio.Queue()
             receive_task = asyncio.create_task(receive_messages(conn, new_stream_id))
-            send_task = asyncio.create_task(send_messages(conn, new_stream_id, input_queue, user))
+            send_task = asyncio.create_task(send_messages(conn, new_stream_id, input_queue))
             input_task = asyncio.create_task(input_handler(input_queue))
             await asyncio.sleep(0.1)  # Give the tasks time to start
             break
@@ -54,8 +55,8 @@ async def echo_client_proto(scope: Dict, conn: EchoQuicConnection):
     while True:
         await asyncio.sleep(3)  # Refresh every 3 seconds
 
-#Send message to the server
-async def send_messages(conn: EchoQuicConnection, stream_id: int, input_queue: asyncio.Queue, username: str):
+#Send messages to the server
+async def send_messages(conn: EchoQuicConnection, stream_id: int, input_queue: asyncio.Queue):
     while True:
         message = await input_queue.get()
         if message.lower() == "/exit":
@@ -66,4 +67,4 @@ async def send_messages(conn: EchoQuicConnection, stream_id: int, input_queue: a
         datagram = pdu.Datagram(pdu.MSG_TYPE_TEXT, int(round(datetime.now().timestamp())), message)
         qs = QuicStreamEvent(stream_id, datagram.to_bytes(), False)
         await conn.send(qs)
-        print(f"\r{username}: {message}\n> ", end="", flush=True)
+
