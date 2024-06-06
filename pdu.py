@@ -14,12 +14,10 @@ MSG_TYPE_ACK = 0x09
 MSG_TYPE_EXIT = 0x0A
 
 class Datagram:
-    def __init__(self, mtype:int, timestamp:int, msg:str, sz:int=0):
+    def __init__(self, mtype:int, timestamp:int, msg:str):
         self.mtype = mtype
-        self.sz = len(msg)
         self.timestamp = timestamp
-        #self.sender_id = sender_id # Removed user ID system due to redundancy
-        self.msg = msg
+        self.msg = str(msg)
         
     def to_json(self):
         return json.dumps(self.__dict__)    
@@ -29,8 +27,8 @@ class Datagram:
         return Datagram(**json.loads(json_str))
     
     def to_bytes(self):
-        return json.dumps(self.__dict__).encode('utf-8')
+        return self.to_json().encode('utf-8')
     
     @staticmethod
     def from_bytes(json_bytes):
-        return Datagram(**json.loads(json_bytes.decode('utf-8')))    
+        return Datagram.from_json(json_bytes.decode('utf-8'))

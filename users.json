@@ -1,12 +1,12 @@
 {
     "users": [
         {
-            "name": "BigMode",
+            "username": "BigMode",
             "id": "1",
             "password": "yes"
         },
         {
-            "name": "extralettuce",
+            "username": "extralettuce",
             "id": "2",
             "password": "password"
         },
@@ -19,6 +19,10 @@
             "username": "onemore",
             "id": "4",
             "password": "salmon"
-        }
+        },
+        {
+            "username": "asd",
+            "id": "5",
+            "password": "asd"}
     ]
 }

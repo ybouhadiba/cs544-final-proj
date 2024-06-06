@@ -9,60 +9,65 @@ import pdu
 onlineUsers = {}
 
 def read_users():
-		return json.load(open("users.json", "r"))
+    return json.load(open("users.json", "r"))
 
 def valid_login(username, password):
-		userFile = read_users()
-		for user in userFile["users"]:
-				if user["name"] == username and user["password"] == password:
-						return True, user["id"]
-		return False, None
-
-# User ID system removed, redundant with username for current implementation
-# def valid_id(id):
-# 		userFile = read_users()
-# 		for user in userFile["users"]:
-# 				if user["id"] == id:
-# 						return True
-# 		return False
+    userFile = read_users()
+    for user in userFile["users"]:
+        print(user)
+        if user["username"] == username and user["password"] == password:
+            return True, user["username"]
+    return False, None
 
 async def echo_server_proto(scope:Dict, conn:EchoQuicConnection):
-		streamID = conn.new_stream()
-		buffer = b""
-		while True:
-				try:
-						message:QuicStreamEvent = await conn.receive()
-						buffer+=message.data
-						userFile = read_users()
-						while True:
-							try:
-								decoded_data, end_pos = json.JSONDecoder().raw_decode(buffer.decode('utf-8'))
-								dgram_in = pdu.Datagram(**decoded_data)
-								print("[svr] received message: ", dgram_in.msg)
-								#CHECK MESSAGE TYPE:
-								if dgram_in.mtype == pdu.MSG_TYPE_HELLO: # Case: Client Login 
-									payload = json.loads(dgram_in.msg)
-									if valid_login(payload["user"],payload["password"]):
-										onlineUsers[streamID] = {"user":payload["user"],"conn":conn}
-										welcome_out = pdu.Datagram(pdu.MSG_TYPE_WELCOME, int(round(datetime.now().timestamp())), f"Successful login. Currently online users: {','.join(onlineUsers.keys())}")
-										await conn.send(QuicStreamEvent(streamID, welcome_out.to_bytes(), False))
-										join_notif = pdu.Datagram(pdu.MSG_TYPE_TEXT, int(round(datetime.now().timestamp())), f"{payload['user']} has joined the chat.")
-										await sendToClients(streamID, join_notif)
-								elif dgram_in.mtype == pdu.MSG_TYPE_TEXT: # Case: Client Message
-									message_out = pdu.Datagram(pdu.MSG_TYPE_TEXT, int(round(datetime.now().timestamp())), f"{datetime.now.time} {onlineUsers[streamID].key()}: {dgram_in.msg}")
-									await sendToClients(streamID, message_out)
-								elif dgram_in.mtype == pdu.MSG_TYPE_EXIT: # Case: Client Logout
-									exit_notif = pdu.Datagram(pdu.MSG_TYPE_TEXT, int(round(datetime.now().timestamp())), f"{payload['user']} has logged out.")
-									del onlineUsers[streamID]
-									await sendToClients(streamID, exit_notif)
-							except Exception as e:
-									print(e)
-									break
-				except Exception as e:
-						print(e)
-						break
+    while True:
+        try:
+            message:QuicStreamEvent = await conn.receive()
+            streamID = message.stream_id
+
+            dgram_in = None
+            try:
+                dgram_in = pdu.Datagram.from_bytes(message.data)
+                print("[svr] received message: ", dgram_in.msg)
+            except json.JSONDecodeError:
+                print(f"Invalid JSON received: {message.data}")
+                continue
+            print("Asdas")
+            if dgram_in:
+                #CHECK MESSAGE TYPE:
+                if dgram_in.mtype == pdu.MSG_TYPE_HELLO: # Case: Client Login 
+                    payload = json.loads(dgram_in.msg)
+                    print(payload)
+                    valid, username = valid_login(payload["user"],payload["password"])
+                    if valid:
+                        onlineUsers[streamID] = {"user":username,"conn":conn}
+                        print("Asdas")
+                        welcome_out = pdu.Datagram(pdu.MSG_TYPE_WELCOME, int(round(datetime.now().timestamp())), str(f"Successful login. Currently online users: {','.join(user['user'] for user in onlineUsers.values())}"))
+                        print("Asdas")
+                        await conn.send(QuicStreamEvent(streamID, welcome_out.to_bytes(), False))
+                        print("Asdas")
+                        join_notif = pdu.Datagram(pdu.MSG_TYPE_TEXT, int(round(datetime.now().timestamp())), f"{username} has joined the chat.")
+                        await sendToClients(streamID, join_notif)
+                        print("Asdas")
+                    else:
+                        error_out = pdu.Datagram(pdu.MSG_TYPE_TEXT, int(round(datetime.now().timestamp())), "Invalid login credentials")
+                        await conn.send(QuicStreamEvent(streamID, error_out.to_bytes(), False))
+                elif dgram_in.mtype == pdu.MSG_TYPE_TEXT: # Case: Client Message
+                    username = onlineUsers[streamID]["user"] 
+                    message_out = pdu.Datagram(pdu.MSG_TYPE_TEXT, int(round(datetime.now().timestamp())), f"{datetime.now().time()} {username}: {dgram_in.msg}")
+                    await sendToClients(streamID, message_out)
+                elif dgram_in.mtype == pdu.MSG_TYPE_EXIT: # Case: Client Logout
+                    username = onlineUsers[streamID]["user"]
+                    exit_notif = pdu.Datagram(pdu.MSG_TYPE_TEXT, int(round(datetime.now().timestamp())), f"{username} has logged out.")
+                    del onlineUsers[streamID]
+                    await sendToClients(streamID, exit_notif)
+            else:
+                print("Invalid message received.")
+        except Exception as e:
+            raise e
+           
 
 async def sendToClients(sender_stream, datagram):
-	for streamID, user in onlineUsers.items():
-		if streamID != sender_stream:
-			await user["conn"].send(QuicStreamEvent(stream_id, datagram.to_bytes(), False))
+    for streamID, user in onlineUsers.items():
+        if streamID != sender_stream:
+            await user["conn"].send(QuicStreamEvent(streamID, datagram.to_bytes(), False))
