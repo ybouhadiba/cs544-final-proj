@@ -8,9 +8,11 @@ import pdu
 
 onlineUsers = {}
 
+#Read in user data file
 def read_users():
     return json.load(open("users.json", "r"))
 
+#Check if login credentials are valid based on user data file
 def valid_login(username, password):
     userFile = read_users()
     for user in userFile["users"]:
@@ -18,7 +20,7 @@ def valid_login(username, password):
             return True, user["username"]
     return False, None
 
-
+#Main server function
 async def echo_server_proto(scope: Dict, conn: EchoQuicConnection):
     streamID = None
     username = None
@@ -88,7 +90,7 @@ async def echo_server_proto(scope: Dict, conn: EchoQuicConnection):
                 del onlineUsers[streamID]
             raise e
 
-
+#Send out message to all online users
 async def broadcastMessage(datagram, exclude_stream=None):
     for streamID, user in onlineUsers.items():
             try:

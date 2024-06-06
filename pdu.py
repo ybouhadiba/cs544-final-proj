@@ -3,15 +3,8 @@ import json
 
 MSG_TYPE_HELLO = 0x00
 MSG_TYPE_WELCOME = 0x01
-MSG_TYPE_JOIN = 0x02
-MSG_TYPE_JOINACK = 0x03
-MSG_TYPE_LEAVE = 0x04
-MSG_TYPE_PRESENCE = 0x05
-MSG_TYPE_TYPING = 0x06
-MSG_TYPE_STOPTYPING = 0x07
-MSG_TYPE_TEXT = 0x08
-MSG_TYPE_ACK = 0x09
-MSG_TYPE_EXIT = 0x0A
+MSG_TYPE_TEXT = 0x02
+MSG_TYPE_EXIT = 0x03
 
 class Datagram:
     def __init__(self, mtype:int, timestamp:int, msg:str):

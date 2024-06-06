@@ -4,6 +4,7 @@
 2. The certs in the ./certs directory are fine for testing there is a script if you want to rebuild your own but you will need openssl installed
 3. run `python3 echo.py server` to start the server with defaults and `python3 echo.py client` to start the client with defaults.
 4. Refer to users.json for user login info.
+5. Test by having multiple connected users connected through separate cliend cmd windows, and try chatting with each.
 
 Correct output for server:
 

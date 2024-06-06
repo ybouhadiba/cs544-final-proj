@@ -5,6 +5,7 @@ from echo_quic import EchoQuicConnection, QuicStreamEvent
 import pdu
 from datetime import datetime
 
+#Handle received messages without blocking the event loop
 async def receive_messages(conn: EchoQuicConnection, stream_id: int):
     print("[cli] starting receive_messages")
     while True:
@@ -19,13 +20,13 @@ async def receive_messages(conn: EchoQuicConnection, stream_id: int):
             print(f"Error receiving message: {e}")
             break
 
-
+#Handle user input without blocking the event loop, preventing input() from blocking receipt
 async def input_handler(input_queue: asyncio.Queue):
     while True:
         message = await asyncio.to_thread(input, "> ")
         await input_queue.put(message)
 
-
+#Main client function
 async def echo_client_proto(scope: Dict, conn: EchoQuicConnection):
     print('[cli] starting client')
     while True:
@@ -53,8 +54,7 @@ async def echo_client_proto(scope: Dict, conn: EchoQuicConnection):
     while True:
         await asyncio.sleep(3)  # Refresh every 3 seconds
 
-
-
+#Send message to the server
 async def send_messages(conn: EchoQuicConnection, stream_id: int, input_queue: asyncio.Queue, username: str):
     while True:
         message = await input_queue.get()
